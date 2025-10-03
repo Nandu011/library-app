@@ -18,6 +18,18 @@ app.get("/", (req, res) => {
 app.get('/books', (req, res) => {
     res.json(books)
 });
+
+// Get a single book by id
+app.get('/books/:id', (req, res) =>{
+  const bookId = parseInt(req.params.id);
+  const book = books.find(b => b.id ===bookId);
+
+  if (book){
+    res.json(book);
+  }else{
+    res.status(404).json({message: "Book not found"})
+  }
+});
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
