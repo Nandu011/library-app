@@ -1,12 +1,13 @@
+require('dotenv').config(); // load environment variables
 const { Pool } = require('pg'); // PostgreSQL client
 
 // PostgreSQL connection setup
 const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'library_db',
-  password: 'Sachin@sql',
-  port: 5432,
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT,
 });
 
 // Check database connection
