@@ -2,11 +2,13 @@ const express = require('express'); // import express
 const app = express(); // create express app
 const PORT = 5000; // port for server to listen on
 const bookRoutes = require('./routes/bookRoutes'); // Book Routes
+const userRoute = require('./routes/userRoutes');
 require('./config/db')// connect to DB
+
 
 app.use(express.json()); // Middleware to parse JSON bodies
 
-
+app.use('/api/users', userRoute)
 // Base Route
 app.get("/", (req, res) =>   res.send("Library app connected to PostgreSQL 🚀"));
 
