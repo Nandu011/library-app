@@ -8,12 +8,13 @@ require('./config/db')// connect to DB
 
 app.use(express.json()); // Middleware to parse JSON bodies
 
+//Routes
 app.use('/api/users', userRoute)
-// Base Route
-app.get("/", (req, res) =>   res.send("Library app connected to PostgreSQL 🚀"));
+app.use('/api/borrow', require('./routes/borrowRoutes'));
+app.get("/", (req, res) =>   res.send("Library app connected to PostgreSQL 🚀"));// Base Route
 
-// Book Routes
-app.use('/books', bookRoutes)
+
+app.use('/books', bookRoutes)// Book Routes
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
