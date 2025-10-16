@@ -1,11 +1,23 @@
 const express = require('express');
-const router = express.Router();
-const bookController = require('../controllers/bookControllers');
+const pool = require('../config/db');
+const { verifyAdmin, verifyUser } = require('../middleware/authMiddleware');
 
-router.get('/', bookController.getBooks);
-router.get('/:id', bookController.getBookById);
-router.post('/', bookController.addBook);
-router.put('/:id', bookController.updateBook);
-router.delete('/:id', bookController.deleteBook);
+const router = express.Router();
+
+// Add a new book (admin only)
+router.post('/add', verifyAdmin, async (req, res) =>{
+    const { title, author, synopsis, image_url, shelf_no } = req.body;
+    try {
+        const newBook = await pool.query(
+            ` INSERT INTO books (title, author, sysnopsis, image_url, shelf_no) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+            [title, author, synopsis, image_url, shelf_no]
+        );
+        res.status(201).json({message: 'Book added', book: newBook.rows[0]});
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({message: 'Server error'});
+    }
+});
 
 module.exports = router;
