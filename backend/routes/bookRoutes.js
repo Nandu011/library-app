@@ -20,4 +20,24 @@ router.post('/add', verifyAdmin, async (req, res) =>{
     }
 });
 
+//Add a copy to existing book.
+router.post('/:bookId/add-copy', verifyAdmin, async (req,res) => {
+    const {bookId} = req.params;
+    const {unique_code} = req.body;
+
+    try{
+        const copy = await pool.query(
+            'INSERT INTO book_copies (book_id, unique_code) VALUES ($1, $2) RETURNING *',
+            [bookId, unique_code]
+        );
+
+        res.status(201).json({message: "Copy added", copy: copy.rows[0]});
+
+    } catch (err) {
+        res.status(500).json({message: "Server error"});
+    }
+});
+
+
+
 module.exports = router;
