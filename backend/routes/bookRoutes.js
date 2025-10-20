@@ -38,6 +38,56 @@ router.post('/:bookId/add-copy', verifyAdmin, async (req,res) => {
     }
 });
 
+// Get all books
+router.get('/', async (req, res) => {
+    try {
+        const books = await pool.query(`
+            SELECT b.*, COALESCE(AVG(r.rating), 0)::NUMERIC(2,1) AS average_rating
+            FROM books b
+            LEFT JOIN reviews r ON b.id = r.book_id
+            GROUP BY b.id
+            ORDER BY b.id;
+            `);
+            res.json(books.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({message: "Server erro"});
+    }
+});
 
+// Get single book details
+router.get('/:id', async(req, res) => {
+    const {id} = req.params;
+    try {
+        const book = await pool.query(
+            `SELECT b.*, COALESCE(AVG(r.rating), 0)::NUMERIC(2,1) AS average_rating
+            FROM books b
+            LEFT JOIN reviews r ON b.id = r.book_id
+            WHERE b.id = $1
+            GROUP BY b.id`, [id] 
+        );
+        if (book.rows.length === 0 ) return res.status(404).json({message: "Book not found"});
+        res.json(book.rows[0]);
+    } catch (err) {
+        res.status(500).json({message: 'Server error'});
+    }
+});
+
+// Add reviews
+router.post('/:id/review', verifyUser, async (req, res) => {
+    const {id} = req.params;
+    const {rating, comment} = req.body;
+    const userId = req.user.id;
+
+    try {
+        await pool.query(
+            'INSERT INTO reviews (user_id, book_id, rating, comment) VALUES ($1, $2, $3, $4)',
+            [userId, id, rating, comment]
+        );
+        res.status(201).json({message: 'New book added'});
+    } catch (err) {
+        res.status(500).json({message: 'Server error'});
+    }
+});
 
 module.exports = router;
