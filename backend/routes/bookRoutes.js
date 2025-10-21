@@ -84,7 +84,24 @@ router.post('/:id/review', verifyUser, async (req, res) => {
             'INSERT INTO reviews (user_id, book_id, rating, comment) VALUES ($1, $2, $3, $4)',
             [userId, id, rating, comment]
         );
-        res.status(201).json({message: 'New book added'});
+        res.status(201).json({message: 'New review added'});
+    } catch (err) {
+        res.status(500).json({message: 'Server error'});
+    }
+});
+
+// View all reviews
+router.get('/:id/reviews', async (req, res) => {
+    const {id} = req.params;
+    try {
+        const reviews = await pool.query(
+            `SELECT r.*, u.name FROM reviews r
+            JOIN users u ON r.user_id = u.id
+            WHERE r.book_id = $1
+            ORDER BY r.created_at DESC`, [ID]
+        );
+        res.json(reviews.rows);
+
     } catch (err) {
         res.status(500).json({message: 'Server error'});
     }

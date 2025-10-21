@@ -14,7 +14,7 @@ app.use('/api/borrow', require('./routes/borrowRoutes'));
 app.get("/", (req, res) =>   res.send("Library app connected to PostgreSQL 🚀"));// Base Route
 
 
-app.use('/books', bookRoutes)// Book Routes
+app.use('/api/books', bookRoutes)// Book Routes
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
