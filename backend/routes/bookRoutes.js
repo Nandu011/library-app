@@ -1,15 +1,18 @@
 const express = require('express');
 const pool = require('../config/db');
 const { verifyAdmin, verifyUser } = require('../middleware/authMiddleware');
-
+const upload = require('../middleware/upload');
 const router = express.Router();
 
 // Add a new book (admin only)
-router.post('/add', verifyAdmin, async (req, res) =>{
-    const { title, author, synopsis, image_url, shelf_no } = req.body;
+router.post('/add', verifyAdmin, upload.single('image'), async (req, res) =>{
+    const { title, author, synopsis, shelf_no } = req.body;
+    const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+
     try {
         const newBook = await pool.query(
-            ` INSERT INTO books (title, author, sysnopsis, image_url, shelf_no) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+            ` INSERT INTO books (title, author, sysnopsis, image_url, shelf_no) 
+            VALUES ($1, $2, $3, $4, $5) RETURNING *`,
             [title, author, synopsis, image_url, shelf_no]
         );
         res.status(201).json({message: 'Book added', book: newBook.rows[0]});
