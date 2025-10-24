@@ -7,15 +7,15 @@ const router = express.Router();
 // Add a new book (admin only)
 router.post('/add', verifyAdmin, upload.single('image'), async (req, res) =>{
     const { title, author, synopsis, shelf_no } = req.body;
-    const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+    const image_url = req.file ? req.file.path : null;
 
     try {
         const newBook = await pool.query(
-            ` INSERT INTO books (title, author, sysnopsis, image_url, shelf_no) 
+            ` INSERT INTO books (title, author, synopsis, image_url, shelf_no) 
             VALUES ($1, $2, $3, $4, $5) RETURNING *`,
             [title, author, synopsis, image_url, shelf_no]
         );
-        res.status(201).json({message: 'Book added', book: newBook.rows[0]});
+        res.status(201).json({message: 'Book added successfully', book: newBook.rows[0]});
 
     } catch (err) {
         console.error(err);
