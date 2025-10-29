@@ -45,7 +45,7 @@ router.post('/:bookId/add-copy', verifyAdmin, async (req,res) => {
 router.get('/', async (req, res) => {
     try {
         const books = await pool.query(`
-            SELECT b.*, COALESCE(ROUND(AVG(r.rating), 1), 0)::NUMERIC(2,1) AS average_rating,
+            SELECT b.*, ROUND(COALESCE(AVG(r.rating), 0), 1) AS average_rating,
             COUNT(r.id) AS review_count
             FROM books b
             LEFT JOIN reviews r ON b.id = r.book_id
