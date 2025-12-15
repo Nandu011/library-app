@@ -1,5 +1,10 @@
+const cors = require('cors');
 const express = require('express'); // import express
 const app = express(); // create express app
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true
+}));
 const PORT = 5000; // port for server to listen on
 const bookRoutes = require('./routes/bookRoutes'); // Book Routes
 const userRoute = require('./routes/userRoutes');
