@@ -4,7 +4,7 @@ import axios from "axios";
 import {useNavigate} from "react-router-dom";
 
 export default function Login() {
-    const [mobile, setMobile] = useState("");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
 
@@ -16,7 +16,7 @@ export default function Login() {
     
         try {
             const res = await axios.post(`${API_URL}/users/login`, {
-                mobile,
+                email,
                 password,
             });
 
@@ -46,9 +46,9 @@ export default function Login() {
             <form onSubmit={handleLogin}>
                 <input
                     type="text"
-                    placeholder="Mobile Number"
-                    value={mobile}
-                    onChange={(e) => setMobile(e.target.value)}
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required 
                 />
                 <br /><br />
