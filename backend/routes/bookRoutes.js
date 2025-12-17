@@ -139,4 +139,45 @@ router.get('/:id/reviews', async (req, res) => {
     }
 });
 
+// Get book copy status (Admin only)
+router.get('/:bookId/status', verifyAdmin, async (req, res) => {
+    const {bookId} = req.params;
+
+    try {
+        const result = await pool.query(`
+            SELECT
+            b.id AS book_id,
+            b.title,
+            bc.id AS book_copy_id,
+            bc.unique_code,
+            bc.is_available,
+            u.id AS user_id,
+            u.name AS user_name,
+            u.email,
+            u.mobile,
+            bb.borrow_date,
+            bb.due_date,
+            bb.returned
+            FROM book_copies bc
+            JOIN books b ON bc.book_id = b.id
+            LEFT JOIN borrowed_books bb ON bc.id = bb.book_copy_id AND bb.returned = false
+            LEFT JOIN users u ON bb.user_id = u.id
+            WHERE b.id = $1 ORDER BY bc.id`, [bookId]);
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({message: "Book not found"});
+            }
+
+            res.json({
+                book_id: bookId,
+                title: result.rows[0].title,
+                copies: result.rows
+            });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({message: "Server error"});
+    }
+});
+
 module.exports = router;
