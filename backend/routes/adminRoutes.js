@@ -18,46 +18,35 @@ router.get('/users', verifyAdmin, async (req, res) => {
     }
 });
 
-// Create new users (Admin only)
-
-router.post("/users/add", verifyAdmin, async (req, res) => {
-    const {name, mobile, email, password, role} = req.body;
-
-    try {
-        const exists = await pool.query(` SELECT id FROM users WHERE mobile=$1`, [mobile]);
-        if (exists.rows.length > 0) {
-            return res.status(400).json({message: "User with this mobile already exists"});
-        }
-
-        const newUser =  await pool.query(
-            `INSERT INTO users (name, mobile, email, password, role)
-            VALUES ($1,$2, $3, $4, $5)`,
-            [name, mobile, email, password, role ?? "user"]
-        );
-
-        res.status(201).json({ message: "User created", user: newUser.rows[0] });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error"});
-    }
-});
 
 // Get all borrowed books
-router.get("/borrowed", verifyAdmin, async (req, res) => {
+router.get('/borrowed', verifyAdmin, async (req, res) => {
     try {
-        const borrowed =  await pool.query(`
-            SELECT bb.id, u.name AS username, u.mobile,
-            b.title, c.unique_code,
-            bb.borrowed_date, bb.return_date, bb.returned
+        const result = await pool.query(`
+            SELECT
+            bb.id AS borrow_id,
+            u.name AS user_name,
+            u.email,
+            u.mobile,
+            b.title, 
+            bc.unique_code,
+            bb.borrow_date,
+            bb.due_date,
+            bb.returned,
+            bb.return_date,
+            CASE 
+            WHEN bb.returned = false AND bb.due_date < CURRENT_DATE
+            THEN true
+            ELSE false
+            END AS is_overdue
             FROM borrowed_books bb
             JOIN users u ON bb.user_id = u.id
-            JOIN book_copies c ON bb.copy_id = c.id
-            JOIN books b ON c.book_id= b.id
-            ORDER BY bb.borrowed_date DESC
+            JOIN book_copies bc ON bb.book_copy_id = bc.id
+            JOIN books b ON bc.book_id = b.id
+            ORDER BY bb.borrow_date DESC
             `);
 
-            res.json(borrowed.rows);
+        res.json(result.rows);
     } catch (err) {
         console.error(err);
         res.status(500).json({message: "Server error"});
@@ -65,32 +54,52 @@ router.get("/borrowed", verifyAdmin, async (req, res) => {
 });
 
 //Force return a book
-router.put("/force-return/:borrowId", verifyAdmin, async (req, res) => {
-    const {borrowId} = req.params;
+router.put('/force-return/:borrowId', verifyAdmin, async (req, res) => {
+    const { borrowId } = req.params;
+    const client = await pool.connect();
 
     try {
-        //Mark as returned
-        const updated = await pool.query(`
+        await client.query('BEGIN');
+
+        // Get borrow record
+        const borrowResult = await client.query(`
+            SELECT book_copy_id
+            FROM borrowed_books
+            WHERE id = $1 AND returned = false`,
+        [borrowId]);
+
+        if (borrowResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({message: "Record not found or already returned"});
+        }
+
+        const bookCopyId = borrowResult.rows[0].book_copy_id;
+
+        // Mark borrow as returned
+        await client.query(`
             UPDATE borrowed_books
-            SET returned = TRUE, return_date = NOW()
-            WHERE id = $1 AND returned = FALSE
-            RETURNING copy_id`, 
-        [borrowId]
-    );
+            SET returned = true, return_date = NOW()
+            WHERE id = $1`,
+        [borrowId]);
 
-    if (updated.rows.length === 0) 
-        return res.status(404).json({message: 'Record not found or already returned'});
+        // Mark copy available
+        await client.query(`
+            UPDATE book_copies
+            SET is_available = true
+            WHERE id = $1
+            `, [bookCopyId]);
 
-    //Mark copy as available
-    await pool.query(
-        `UPDATE book_copies SET is_borrrowed =  FALSE WHERE id = $1`,
-        [updated.rows[0].copy_id]
-    );
+            await client.query('COMMIT');
 
-    res.json({ message: "Book force-returned successfully"});
+            res.json({message: 'Book force-returned successfully'});
+
+
     } catch (err) {
+        await client.query('ROLLBACK');
         console.error(err);
-        res.status(500).json({message: "Server error"});
+        res.status(500).json({message: 'Server error'});
+    } finally {
+        client.release();
     }
 });
 

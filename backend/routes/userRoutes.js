@@ -57,7 +57,7 @@ router.post('/add-user', verifyAdmin, async(req, res) => {
     const { name, email, password, mobile, role } = req.body;
     try {
         //Check if email exists
-        const userCheck = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        const userCheck = await pool.query('SELECT * FROM users WHERE email = $1 OR mobile = $2', [email, mobile]);
         if (userCheck.rows.length > 0){
             return res.status(400).json({message: 'User already exists'});
         }
