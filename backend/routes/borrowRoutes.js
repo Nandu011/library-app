@@ -6,41 +6,40 @@ const router = express.Router();
 
 /**
  * Borrow a book copy
- * POST /api/borrow 
- * */ 
-
+ * POST /api/borrow
+ */
 router.post('/', verifyUser, async (req, res) => {
-  const {book_copy_id} = req.body;
-  const userId  = req.user.id;
+  const { book_copy_id } = req.body;
+  const userId = req.user.id;
 
   const client = await pool.connect();
 
   try {
-    await client.query('BIGIN');
+    await client.query('BEGIN');
 
-    // Check if copy exists & is available 
+    //  Check availability
     const copyResult = await client.query(
-      'SELECT * FROM book_copies WHERE id = $1 AND is_available = true',
+      'SELECT * FROM book_copies WHERE id = $1 AND is_available = true FOR UPDATE',
       [book_copy_id]
     );
 
     if (copyResult.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(400).json({message: 'Book copy not available'});
+      return res.status(400).json({ message: 'Book copy not available' });
     }
 
-    // Insert into borrowed_books
-    const borrowResult = await client.query(
-      `INSERT INTO borrowed_books (user_id, book_copy_id, due_date)
-      VALUES ($1, $2, CURRENT_DATE + INTERVAL '14 days')
-      RETURNING *`,
-      [userId, book_copy_id]
-    );
-
-    //Mark copy as unavailable
+    //  Mark copy unavailable
     await client.query(
       'UPDATE book_copies SET is_available = false WHERE id = $1',
       [book_copy_id]
+    );
+
+    //  Insert borrow record
+    const borrowResult = await client.query(
+      `INSERT INTO borrowed_books (user_id, book_copy_id, due_date)
+       VALUES ($1, $2, CURRENT_DATE + INTERVAL '14 days')
+       RETURNING *`,
+      [userId, book_copy_id]
     );
 
     await client.query('COMMIT');
@@ -63,7 +62,7 @@ router.post('/', verifyUser, async (req, res) => {
  * Return a book copy
  * PUT /api/borrow/:id
  */
-router.put(':/id', verifyUser, async (req, res) => {
+router.put('/:id', verifyUser, async (req, res) => {
   const borrowId = req.params.id;
   const userId = req.user.id;
 
@@ -72,10 +71,9 @@ router.put(':/id', verifyUser, async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // Get borrowed record 
     const borrowResult = await client.query(
       `SELECT * FROM borrowed_books
-      WHERE id = $1 AND user_id = $2 AND returned = false`,
+       WHERE id = $1 AND user_id = $2 AND returned = false`,
       [borrowId, userId]
     );
 
@@ -86,24 +84,21 @@ router.put(':/id', verifyUser, async (req, res) => {
 
     const bookCopyId = borrowResult.rows[0].book_copy_id;
 
-    // Mark borrowed_books as returned
     await client.query(
       `UPDATE borrowed_books
-      SET returned = true, return_date = NOW()
-      WHERE id = $1`,
+       SET returned = true, return_date = NOW()
+       WHERE id = $1`,
       [borrowId]
     );
 
-    // Mark copy as available
     await client.query(
-      'UPDATE book_copies SET is_available = true WHERE id =$1',
+      'UPDATE book_copies SET is_available = true WHERE id = $1',
       [bookCopyId]
     );
 
     await client.query('COMMIT');
 
     res.json({ message: 'Book returned successfully' });
-
 
   } catch (err) {
     await client.query('ROLLBACK');
@@ -124,13 +119,13 @@ router.get('/my', verifyUser, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT
-      bb.id,
-      bb.borrow_date,
-      bb.due_date,
-      bb.returned,
-      b.title,
-      b.author,
-      bc.unique_code
+        bb.id,
+        bb.borrow_date,
+        bb.due_date,
+        bb.returned,
+        b.title,
+        b.author,
+        bc.unique_code
       FROM borrowed_books bb
       JOIN book_copies bc ON bb.book_copy_id = bc.id
       JOIN books b ON bc.book_id = b.id
@@ -142,7 +137,7 @@ router.get('/my', verifyUser, async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({message: 'Server error'});
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
