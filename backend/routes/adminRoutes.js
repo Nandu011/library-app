@@ -55,6 +55,36 @@ router.get('/overdue', verifyAdmin, async (req, res) => {
     }
 });
 
+// Get fines for overdue books
+router.get('/fines', verifyAdmin, async (req,res) => {
+    try {
+        const result = await pool.query(`
+            SELECT
+                bb.id AS borrow_id,
+                u.name AS user_name,
+                u.email,
+                u.mobile,
+                b.title,
+                bc.unique_code,
+                bb.borrow_date,
+                bb.due_date,
+                (CURRENT_DATE - bb.due_date) AS overdue_days,
+                (CURRENT_DATE - bb.due_date) * 5 AS fine_amount
+            FROM borrowed_books bb
+            JOIN users u ON bb.user_id = u.id
+            JOIN book_copies bc ON bb.book_copy_id = bc.id
+            JOIN books b ON bc.book_id = b.id
+            WHERE bb.returned = false
+                AND bb.due_date < CURRENT_DATE
+            ORDER BY fine_amount DESC`);
+        
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({message: 'Server error'});
+    }
+});
+
 // Get all users
 router.get('/users', verifyAdmin, async (req, res) => {
     try {
