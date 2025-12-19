@@ -1,4 +1,4 @@
-import { Link, Outlet } from "react-router-dom";
+import { NavLink, Outlet } from "react-router-dom";
 
 export default function AdminDashboard() {
     return (
@@ -8,11 +8,11 @@ export default function AdminDashboard() {
                 <h2>📚 Library Admin</h2>
 
                 <ul style={{ listStyle: "none", padding: 0}}>
-                    <li><Link to="/admin">Dashboard</Link></li>
-                    <li><Link to="/admin/users">Manage Users</Link></li>
-                    <li><Link to="/admin/add-user">Add User</Link></li>
-                    <li><Link to="/admin/books">Manage Books</Link></li>
-                    <li><Link to="/admin/borrowed">Borrowed Books</Link></li>
+                    <li><NavLink to="/admin">Dashboard</NavLink></li>
+                    <li><NavLink to="/admin/users">Manage Users</NavLink></li>
+                    <li><NavLink to="/admin/add-user">Add User</NavLink></li>
+                    <li><NavLink to="/admin/books">Manage Books</NavLink></li>
+                    <li><NavLink to="/admin/borrowed">Borrowed Books</NavLink></li>
                 </ul>
             </aside>
 
@@ -23,6 +23,8 @@ export default function AdminDashboard() {
         </div>
     );
 }
+
+
 
 const sidebarStyle = {
     width: "220px",
