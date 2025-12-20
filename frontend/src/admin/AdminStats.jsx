@@ -31,7 +31,7 @@ export default function AdminStats() {
                 <Card title="Borrowed copies" value={stats.borrowed_copies} />
                 <Card title="Users" value={stats.total_users} />
                 <Card title="Active Borrows" value={stats.active_borrows} />
-                <Card title="Overdue" value={stats.overdue_books} />
+                <Card title="Overdue" value={stats.overdue_books} danger/>
             </div>
         </>
     );
