@@ -11,7 +11,7 @@ export default function BooksList() {
     const [message, setMessage] = useState("");
 
     const loadBooks = () => {
-        fetch(`${API_URL}/ books`)
+        fetch(`${API_URL}/books`)
         .then(res => res.json())
         .then(data => {
             setBooks(data);
@@ -40,9 +40,9 @@ export default function BooksList() {
                     method: "POST",
                     headers: {
                         "Content-Type" : "application/json",
-                        ...getAuthHeaders().headers,
+                        ...getAuthHeaders(),
                     },
-                    body:JSON.stringify({ unique_code: uniqueCode }),
+                    body: JSON.stringify({ unique_code: uniqueCode }),
                 }
             );
             const data = await res.json();
@@ -53,7 +53,7 @@ export default function BooksList() {
 
             setMessage("Copy added successfully");
             setUniqueCode("");
-            selectedBook(null);
+            setSelectedBook(null);
             loadBooks();
 
         } catch (err) {
@@ -108,7 +108,7 @@ export default function BooksList() {
                     <h3>Add copy for: {selectedBook.title}</h3>
 
                     <input
-                        placeholder='"Unique Code'
+                        placeholder='Unique Code'
                         value={uniqueCode}
                         onChange={ (e) => setUniqueCode(e.target.value) }
                     />

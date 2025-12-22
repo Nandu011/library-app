@@ -7,9 +7,10 @@ export default function AdminStats() {
 
     useEffect(() => {
         fetch(`${API_URL}/admin/dashboard`, {
-            headers: getAuthHeaders().headers
+            method: "GET",
+            headers: getAuthHeaders(),
         })
-        .then(res => res => {
+        .then(res => {
             if (!res.ok) throw new Error("Faild to load dashboard stats");
             return res.json();
         })
