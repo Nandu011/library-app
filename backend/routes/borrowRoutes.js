@@ -1,6 +1,6 @@
 const express = require('express');
 const pool = require('../config/db');
-const { verifyUser } = require('../middleware/authMiddleware');
+const { verifyUser, verifyAdmin } = require('../middleware/authMiddleware');
 
 
 const router = express.Router();
@@ -142,5 +142,84 @@ router.get('/my', verifyUser, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+/**
+ * Admin - view all borrowed books
+ * GET /api/borrow
+ */
+router.get('/', verifyAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        bb.id,
+        u.name AS user_name,
+        b.title,
+        bc.unique_code,
+        bb.borrow_date,
+        bb.due_date,
+        bb.return_date,
+        bb.returned
+      FROM borrowed_books bb
+      JOIN users u ON bb.user_id = u.id
+      JOIN book_copies bc ON bb.book_copy_id = bc.id
+      JOIN books b ON bc.book_id = b.id
+      ORDER BY bb.borrow_date DESC`);
+
+      res.json(result.rows);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({message: "Failed to load borrowed books"});
+  }
+});
+
+/**
+ * Admin - force return book
+ * PUT /api/borrow/admin/:id
+ */
+router.put('/admin/:id', verifyAdmin, async (req, res) => {
+  const borrowId = req.params.id;
+
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const borrowResult = await client.query(
+      `SELECT * FROM borrowed_books WHERE id = $1 AND returned = false`,
+      [borrowId]
+    );
+
+    if (borrowResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({message: 'Borrow record not found'});
+    }
+
+    const bookCopyId = borrowResult.rows[0].book_copy_id;
+
+    await client.query(
+      `UPDATE borrowed_books
+      SET returned = true, return_date = NOW()
+      WHERE id = $1`, [borrowId]
+    );
+
+    await client.query(
+      `UPDATE book_copies SET is_available = true WHERE id = $1`,
+      [bookCopyId]
+    );
+
+    await client.query('COMMIT');
+
+    res.json({message: "Book returned by admin"});
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    res.status(500).json({message: "Server error"});
+  } finally {
+    client.release();
+  }
+});
+
 
 module.exports = router;
