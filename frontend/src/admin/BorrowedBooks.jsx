@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import API_URL, { getAuthHeaders } from "../services/api";
-import { get } from "../../../backend/routes/bookRoutes";
+
 
 
 export default function BorrowedBooks() {
@@ -11,7 +11,10 @@ export default function BorrowedBooks() {
     const loadBorrowedBooks = async () =>{
         try {
             const res =  await fetch(`${API_URL}/borrow`, {
-                ...getAuthHeaders(),
+               headers: {
+                        "Content-Type" : "application/json",
+                        ...getAuthHeaders(),
+                    },
             });
 
             const data = await res.json();
