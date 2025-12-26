@@ -31,7 +31,7 @@ function App() {
             <ProtectedAdminRoute>
               <BooksList />
             </ProtectedAdminRoute>} />
-          <Route path="borrowed" element={<BorrowedBooks />} />
+          <Route path="/admin/borrowed" element={<BorrowedBooks />} />
         </Route>
       </Routes>
     </BrowserRouter>
